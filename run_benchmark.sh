@@ -7,7 +7,7 @@ if [ ! -f "$BIN_DIR$BINARY_NAME" ]; then
   ./build.sh -r
 fi
 
-export NUM_KEYS=1000  # Set the number of keys to sort
+export NUM_KEYS=10000000  # Set the number of keys to sort
 export KEY_SIZE=16    # Set the size of each key in bytes
 export N_RUNS=7       # Set the number of runs for each benchmark
 $BIN_DIR$BINARY_NAME

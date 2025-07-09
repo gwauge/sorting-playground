@@ -8,6 +8,8 @@
 #include <numeric>
 #include <thread>
 #include <mutex>
+#include <execution>
+#include <pdqsort.h>
 
 #include "common.hpp"
 #include "algorithms/radix.hpp"
@@ -16,6 +18,16 @@
 void std_sort_wrapper(std::vector<ByteKey> &keys)
 {
     std::sort(keys.begin(), keys.end());
+}
+
+void std_sort_par_wrapper(std::vector<ByteKey> &keys)
+{
+    std::sort(std::execution::par, keys.begin(), keys.end());
+}
+
+void pdqsort_wrapper(std::vector<ByteKey> &keys)
+{
+    pdqsort(keys.begin(), keys.end());
 }
 
 void run_single_algorithm(std::vector<ByteKey> &sorted_keys,
@@ -63,7 +75,9 @@ int main()
     // Benchmark sorts
     // benchmark_sort(keys, radix_sort, N_RUNS, "Radix sort");
     // benchmark_sort(keys, std_sort_wrapper, N_RUNS, "std::sort");
+    benchmark_sort(keys, std_sort_par_wrapper, N_RUNS, "std::sort (parallel)");
+    // benchmark_sort(keys, pdqsort_wrapper, N_RUNS, "pdqsort");
     // benchmark_sort(keys, parallel_radix_wrapper, N_RUNS, "radix (parallel)");
 
-    run_single_algorithm(keys, parallel_radix_wrapper);
+    // run_single_algorithm(keys, pdqsort_wrapper);
 }
