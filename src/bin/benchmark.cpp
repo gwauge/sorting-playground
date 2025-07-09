@@ -107,8 +107,9 @@ int main()
     std::cout << "Key generation: " << timer.lap_formatted() << std::endl;
 
     auto sorted_keys = keys; // Copy for sorting
-    pdqsort_wrapper(sorted_keys, row_ids);
+    // pdqsort_wrapper(sorted_keys, row_ids);
     // parallel_radix_wrapper(sorted_keys);
+    hybrid_radix_sort_rowids_msb(row_ids, sorted_keys, CHUNK_SIZE);
     std::cout << "Sorted " << sorted_keys.size() << " keys in " << timer.lap_formatted() << std::endl;
     is_sorted(sorted_keys, row_ids);
 

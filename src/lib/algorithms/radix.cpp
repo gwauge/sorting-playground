@@ -99,3 +99,71 @@ void radix_sort_parallel_msb(std::vector<ByteKey> &keys, size_t sort_byte_index)
                     std::make_move_iterator(buckets[b].end()));
     }
 }
+
+/**
+ * Hybrid MSB-radix + std::sort for RowIDs.
+ *
+ * @param rowids        vector of RowID to sort in-place
+ * @param keys          flat array of keys (index = chunk_id * CHUNKSIZE + chunk_offset)
+ * @param CHUNKSIZE     number of entries per chunk
+ * @param msb_index     which byte to bucket on (0 = most significant)
+ */
+void hybrid_radix_sort_rowids_msb(
+    std::vector<RowID> &rowids,
+    const std::vector<ByteKey> &keys,
+    size_t CHUNKSIZE,
+    size_t msb_index)
+{
+    if (rowids.empty())
+        return;
+    constexpr size_t RADIX = 256;
+
+    // 1) Create empty buckets
+    std::array<std::vector<RowID>, RADIX> buckets;
+
+    // 2) Distribute by MSB
+    for (auto &rid : rowids)
+    {
+        size_t idx = rid.chunk_id * CHUNKSIZE + rid.chunk_offset;
+        uint8_t b = keys[idx][msb_index];
+        buckets[b].push_back(rid);
+    }
+
+    // 3) Sort each bucket in parallel
+    ThreadPool pool; // Uses hardware concurrency by default
+    std::vector<std::future<void>> futures;
+
+    for (size_t b = 0; b < RADIX; ++b)
+    {
+        if (buckets[b].empty())
+            continue;
+        // spawn a thread up to hw
+        futures.push_back(pool.enqueue(
+            [&buckets, &keys, CHUNKSIZE, b]()
+            {
+                auto &bucket = buckets[b];
+                pdqsort(bucket.begin(), bucket.end(),
+                        [&](const RowID &a, const RowID &c)
+                        {
+                            const auto &A = keys[a.chunk_id * CHUNKSIZE + a.chunk_offset];
+                            const auto &C = keys[c.chunk_id * CHUNKSIZE + c.chunk_offset];
+                            return A < C;
+                        });
+            }));
+    }
+
+    // wait on any worker threads
+    for (auto &fut : futures)
+        fut.get();
+
+    // 4) Gather back in bucket order
+    rowids.clear();
+    for (size_t b = 0; b < RADIX; ++b)
+    {
+        auto &bucket = buckets[b];
+        rowids.insert(
+            rowids.end(),
+            std::make_move_iterator(bucket.begin()),
+            std::make_move_iterator(bucket.end()));
+    }
+}
