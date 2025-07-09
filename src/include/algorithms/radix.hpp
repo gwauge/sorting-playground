@@ -11,4 +11,8 @@ constexpr size_t RADIX = 256; // byte = 0–255
 void radix_sort(std::vector<ByteKey> &keys);
 
 void radix_sort_parallel_msb(std::vector<ByteKey> &keys, size_t sort_byte_index);
-void radix_sort_parallel_msb(std::vector<ByteKey> &keys);
+
+inline void parallel_radix_wrapper(std::vector<ByteKey> &keys)
+{
+    radix_sort_parallel_msb(keys, 0); // Sort by the 1st byte (MSB)
+}
