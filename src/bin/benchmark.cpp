@@ -15,6 +15,7 @@
 #include "common.hpp"
 #include "rowid.hpp"
 #include "algorithms/radix.hpp"
+#include "algorithms/merge.hpp"
 #include "utils/timer.hpp"
 
 // Wrapper for std::sort to match signature
@@ -112,6 +113,7 @@ int main()
     // pdqsort_wrapper(sorted_keys, row_ids);
     // parallel_radix_wrapper(sorted_keys);
     // hybrid_radix_sort_rowids_msb(row_ids, sorted_keys);
+    // merge_sort(sorted_keys, row_ids);
     // std::cout << "Sorted " << sorted_keys.size() << " keys in " << timer.lap_formatted() << std::endl;
     // is_sorted(sorted_keys, row_ids);
 
@@ -121,6 +123,7 @@ int main()
     // benchmark_sort(keys, std_sort_par_wrapper, N_RUNS, "std::sort (parallel)");
     // benchmark_sort(keys, pdqsort_wrapper, N_RUNS, "pdqsort");
     // benchmark_sort(keys, parallel_radix_wrapper, N_RUNS, "radix (parallel)");
-    benchmark_sort(keys, row_ids, pdqsort_wrapper, N_RUNS, "pdqsort");
+    // benchmark_sort(keys, row_ids, pdqsort_wrapper, N_RUNS, "pdqsort");
     benchmark_sort(keys, row_ids, hybrid_radix_sort_rowids_msb, N_RUNS, "radix (parallel)");
+    benchmark_sort(keys, row_ids, merge_sort, N_RUNS, "merge sort");
 }

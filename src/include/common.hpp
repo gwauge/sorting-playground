@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cstdint>
+#include <iostream>
 #include <algorithm>
 
 #include "rowid.hpp"

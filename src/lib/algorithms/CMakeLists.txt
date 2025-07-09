@@ -1,6 +1,7 @@
 # Build a static library for all sorting algorithms
 add_library(sorting_algorithms
   radix.cpp
+  merge.cpp
 )
 
 # Make headers in src/include/ visible to anyone linking this lib
