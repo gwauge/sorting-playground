@@ -5,7 +5,7 @@ add_executable(benchmark_runner
 
 # Link against your sorting_algorithms library
 target_link_libraries(benchmark_runner
-  PRIVATE sorting_algorithms
+  PRIVATE sorting_algorithms utils
 )
 
 # Ensure it also sees the public headers

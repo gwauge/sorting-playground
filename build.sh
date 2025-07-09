@@ -66,4 +66,14 @@ fi
 ISO_TIME=$(date +%Y-%m-%dT%H-%M-%S)
 BENCHMARK_FOLDER=data/benchmarks
 mkdir -p $BENCHMARK_FOLDER
+
+# Check if NUM_KEYS is set, otherwise default to 1000
+if [ -z "${NUM_KEYS}" ]; then
+  if [[ "$BUILD_TYPE" == "Debug" ]]; then
+    export NUM_KEYS=1000
+  else
+    export NUM_KEYS=10000000  # Default for Release builds
+  fi
+fi
+
 ./$BUILD_DIR/bin/benchmark_runner --benchmark_filter=BM_Sort.* --benchmark_out_format=json --benchmark_out="${BENCHMARK_FOLDER}/${BUILD_TYPE}_${COMPILER}_$ISO_TIME.json"

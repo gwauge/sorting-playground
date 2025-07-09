@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <algorithm>
 
+#include "rowid.hpp"
+
 // Alias for clarity
 using ByteKey = std::vector<uint8_t>;
 
@@ -74,5 +76,24 @@ inline void generate_keys(std::vector<ByteKey> &keys, size_t num_keys, size_t ke
             key[j] = 'a' + (rand() % 26); // Random char from 'a' to 'z'
         }
         keys.emplace_back(std::move(key));
+    }
+}
+
+inline void generate_row_ids(
+    std::vector<RowID> &row_ids,
+    const size_t num_keys,
+    const uint16_t chunk_size = std::numeric_limits<uint16_t>::max())
+{
+    const uint16_t CHUNK_SIZE = std::numeric_limits<uint16_t>::max();
+    const uint32_t NUM_CHUNKS = (num_keys + CHUNK_SIZE - 1) / CHUNK_SIZE; // Round up division
+    std::cout << "Using " << NUM_CHUNKS << " chunks of size " << CHUNK_SIZE << std::endl;
+
+    for (uint32_t chunk_id = 0; chunk_id < NUM_CHUNKS; ++chunk_id)
+    {
+        auto num_rows_in_chunk = std::min(num_keys - chunk_id * CHUNK_SIZE, static_cast<size_t>(CHUNK_SIZE));
+        for (uint16_t chunk_offset = 0; chunk_offset < num_rows_in_chunk; ++chunk_offset)
+        {
+            row_ids.emplace_back(chunk_id, chunk_offset);
+        }
     }
 }
