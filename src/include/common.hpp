@@ -43,25 +43,23 @@ const uint16_t CHUNK_SIZE = getenv("CHUNK_SIZE", std::numeric_limits<uint16_t>::
 // Benchmarking function for any sort
 // sort_fn: void(std::vector<ByteKey>&)
 // Returns median time in ms
-inline void benchmark_sort(const std::vector<ByteKey> &original_keys, void (*sort_fn)(std::vector<ByteKey> &), size_t N, const std::string &label)
+inline void benchmark_sort(
+    const std::vector<ByteKey> &keys,
+    const std::vector<RowID> &original_row_ids,
+    void (*sort_fn)(const std::vector<ByteKey> &, std::vector<RowID> &),
+    const size_t N,
+    const std::string &label)
 {
     std::vector<long long> times;
-    std::vector<ByteKey> keys;
+    std::vector<RowID> row_ids;
     for (size_t i = 0; i < N; ++i)
     {
-        keys = original_keys;
+        row_ids = original_row_ids; // Reset row_ids for each run
         auto start = std::chrono::high_resolution_clock::now();
-        sort_fn(keys);
+        sort_fn(keys, row_ids);
         auto end = std::chrono::high_resolution_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         times.push_back(ms);
-
-        // check if keys are sorted on the last run
-        if (i == N - 1)
-        {
-            bool is_sorted = std::is_sorted(keys.begin(), keys.end());
-            std::cout << label << " is " << (is_sorted ? "" : "NOT ") << "sorted\n";
-        }
     }
     long long med = median(times);
     std::cout << label << " median: " << med << " ms (" << N << " runs)\n";

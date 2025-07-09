@@ -100,23 +100,14 @@ void radix_sort_parallel_msb(std::vector<ByteKey> &keys, size_t sort_byte_index)
     }
 }
 
-/**
- * Hybrid MSB-radix + std::sort for RowIDs.
- *
- * @param rowids        vector of RowID to sort in-place
- * @param keys          flat array of keys (index = chunk_id * CHUNKSIZE + chunk_offset)
- * @param CHUNKSIZE     number of entries per chunk
- * @param msb_index     which byte to bucket on (0 = most significant)
- */
 void hybrid_radix_sort_rowids_msb(
-    std::vector<RowID> &rowids,
     const std::vector<ByteKey> &keys,
-    size_t CHUNKSIZE,
-    size_t msb_index)
+    std::vector<RowID> &rowids)
 {
     if (rowids.empty())
         return;
     constexpr size_t RADIX = 256;
+    constexpr size_t msb_index = 0; // which byte to bucket on (0 = most significant)
 
     // 1) Create empty buckets
     std::array<std::vector<RowID>, RADIX> buckets;
@@ -124,7 +115,7 @@ void hybrid_radix_sort_rowids_msb(
     // 2) Distribute by MSB
     for (auto &rid : rowids)
     {
-        size_t idx = rid.chunk_id * CHUNKSIZE + rid.chunk_offset;
+        size_t idx = rid.chunk_id * CHUNK_SIZE + rid.chunk_offset;
         uint8_t b = keys[idx][msb_index];
         buckets[b].push_back(rid);
     }
@@ -139,14 +130,14 @@ void hybrid_radix_sort_rowids_msb(
             continue;
         // spawn a thread up to hw
         futures.push_back(pool.enqueue(
-            [&buckets, &keys, CHUNKSIZE, b]()
+            [&buckets, &keys, b]()
             {
                 auto &bucket = buckets[b];
                 pdqsort(bucket.begin(), bucket.end(),
                         [&](const RowID &a, const RowID &c)
                         {
-                            const auto &A = keys[a.chunk_id * CHUNKSIZE + a.chunk_offset];
-                            const auto &C = keys[c.chunk_id * CHUNKSIZE + c.chunk_offset];
+                            const auto &A = keys[a.chunk_id * CHUNK_SIZE + a.chunk_offset];
+                            const auto &C = keys[c.chunk_id * CHUNK_SIZE + c.chunk_offset];
                             return A < C;
                         });
             }));

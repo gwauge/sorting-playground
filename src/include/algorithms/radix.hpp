@@ -27,8 +27,12 @@ inline void parallel_radix_wrapper(std::vector<ByteKey> &keys)
     radix_sort_parallel_msb(keys, 0); // Sort by the 1st byte (MSB)
 }
 
+/**
+ * Hybrid MSB-radix + std::sort for RowIDs.
+ *
+ * @param rowids        vector of RowID to sort in-place
+ * @param keys          flat array of keys (index = chunk_id * CHUNKSIZE + chunk_offset)
+ */
 void hybrid_radix_sort_rowids_msb(
-    std::vector<RowID> &rowids,
     const std::vector<ByteKey> &keys,
-    size_t CHUNKSIZE,
-    size_t msb_index = 0);
+    std::vector<RowID> &rowids);

@@ -39,7 +39,9 @@ std::string print_key(const ByteKey &key)
     return result;
 }
 
-void pdqsort_wrapper(std::vector<ByteKey> &keys, std::vector<RowID> &row_ids)
+void pdqsort_wrapper(
+    const std::vector<ByteKey> &keys,
+    std::vector<RowID> &row_ids)
 {
     const size_t KEY_SIZE = 16;
     // pdqsort(keys.begin(), keys.end());
@@ -106,12 +108,12 @@ int main()
     generate_keys(keys, NUM_KEYS, KEY_SIZE);
     std::cout << "Key generation: " << timer.lap_formatted() << std::endl;
 
-    auto sorted_keys = keys; // Copy for sorting
+    // auto sorted_keys = keys; // Copy for sorting
     // pdqsort_wrapper(sorted_keys, row_ids);
     // parallel_radix_wrapper(sorted_keys);
-    hybrid_radix_sort_rowids_msb(row_ids, sorted_keys, CHUNK_SIZE);
-    std::cout << "Sorted " << sorted_keys.size() << " keys in " << timer.lap_formatted() << std::endl;
-    is_sorted(sorted_keys, row_ids);
+    // hybrid_radix_sort_rowids_msb(row_ids, sorted_keys);
+    // std::cout << "Sorted " << sorted_keys.size() << " keys in " << timer.lap_formatted() << std::endl;
+    // is_sorted(sorted_keys, row_ids);
 
     // Benchmark sorts
     // benchmark_sort(keys, radix_sort, N_RUNS, "Radix sort");
@@ -119,4 +121,6 @@ int main()
     // benchmark_sort(keys, std_sort_par_wrapper, N_RUNS, "std::sort (parallel)");
     // benchmark_sort(keys, pdqsort_wrapper, N_RUNS, "pdqsort");
     // benchmark_sort(keys, parallel_radix_wrapper, N_RUNS, "radix (parallel)");
+    benchmark_sort(keys, row_ids, pdqsort_wrapper, N_RUNS, "pdqsort");
+    benchmark_sort(keys, row_ids, hybrid_radix_sort_rowids_msb, N_RUNS, "radix (parallel)");
 }
