@@ -9,71 +9,8 @@
 #include <thread>
 #include <mutex>
 
-#include "common.h"
+#include "common.hpp"
 #include "algorithms/radix.hpp"
-
-void radix_sort_parallel_msb(std::vector<ByteKey> &keys, size_t sort_byte_index = 0)
-{
-    if (keys.empty())
-        return;
-
-    const size_t key_size = keys[0].size();
-    const size_t RADIX = 256;
-
-    for (const auto &key : keys)
-    {
-        if (key.size() != key_size)
-            throw std::invalid_argument("All keys must have the same length.");
-    }
-
-    // Step 1: Distribute keys into 256 buckets by the byte at sort_byte_index
-    std::array<std::vector<ByteKey>, RADIX> buckets;
-    for (auto &key : keys)
-    {
-        uint8_t b = key[sort_byte_index];
-        buckets[b].push_back(std::move(key));
-    }
-
-    // Step 2: Sort each bucket in parallel
-    std::vector<std::thread> threads;
-
-    for (size_t b = 0; b < RADIX; ++b)
-    {
-        if (!buckets[b].empty())
-        {
-            threads.emplace_back([&bucket = buckets[b]]
-                                 {
-                                     std::sort(bucket.begin(), bucket.end()); // lexicographical for ByteKey
-                                 });
-        }
-    }
-
-    for (auto &t : threads)
-    {
-        if (t.joinable())
-            t.join();
-    }
-
-    // Step 3: Reassemble sorted buckets into final array
-    keys.clear();
-    for (size_t b = 0; b < RADIX; ++b)
-    {
-        keys.insert(keys.end(),
-                    std::make_move_iterator(buckets[b].begin()),
-                    std::make_move_iterator(buckets[b].end()));
-    }
-}
-
-// Utility: Compute median from a vector of durations
-long long median(std::vector<long long> &times)
-{
-    std::sort(times.begin(), times.end());
-    size_t n = times.size();
-    if (n % 2 == 0)
-        return (times[n / 2 - 1] + times[n / 2]) / 2;
-    else
-        return times[n / 2];
-}
 
 // Benchmarking function for any sort
 // sort_fn: void(std::vector<ByteKey>&)
@@ -115,9 +52,9 @@ void parallel_radix_wrapper(std::vector<ByteKey> &keys)
 
 int main()
 {
-    const size_t NUM_KEYS = 10000000;
-    const size_t KEY_SIZE = 32;
-    const size_t N_RUNS = 7; // Number of times to benchmark each sort
+    const size_t NUM_KEYS = getenv("NUM_KEYS", size_t(1e7));
+    const size_t KEY_SIZE = getenv("KEY_SIZE", size_t(16));
+    const size_t N_RUNS = getenv("N_RUNS", size_t(7)); // Number of times to benchmark each sort
 
     std::cout << "Generating " << NUM_KEYS << " keys of size " << KEY_SIZE << " bytes...\n";
 
