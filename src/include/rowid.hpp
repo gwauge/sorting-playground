@@ -5,13 +5,25 @@
 class RowID
 {
 public:
+    // Default constructor
+    RowID() : chunk_id(0), chunk_offset(0) {}
+
+    // Parameterized constructor
     RowID(uint32_t chunk_id, uint16_t chunk_offset)
-        : m_chunk_id(chunk_id), m_chunk_offset(chunk_offset) {}
+        : chunk_id(chunk_id), chunk_offset(chunk_offset) {}
 
-    uint32_t chunk_id() const { return m_chunk_id; }
-    uint16_t chunk_offset() const { return m_chunk_offset; }
+    // Copy constructor
+    RowID(const RowID &other) = default;
 
-private:
-    uint32_t m_chunk_id;
-    uint16_t m_chunk_offset;
+    // Move constructor
+    RowID(RowID &&other) noexcept = default;
+
+    // Copy assignment
+    RowID &operator=(const RowID &other) = default;
+
+    // Move assignment
+    RowID &operator=(RowID &&other) noexcept = default;
+
+    uint32_t chunk_id;
+    uint16_t chunk_offset;
 };

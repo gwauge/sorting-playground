@@ -38,6 +38,8 @@ inline size_t getenv(const char *name, size_t default_value)
     return default_value;
 }
 
+const uint16_t CHUNK_SIZE = getenv("CHUNK_SIZE", std::numeric_limits<uint16_t>::max());
+
 // Benchmarking function for any sort
 // sort_fn: void(std::vector<ByteKey>&)
 // Returns median time in ms
@@ -81,10 +83,10 @@ inline void generate_keys(std::vector<ByteKey> &keys, size_t num_keys, size_t ke
 
 inline void generate_row_ids(
     std::vector<RowID> &row_ids,
-    const size_t num_keys,
-    const uint16_t chunk_size = std::numeric_limits<uint16_t>::max())
+    const size_t num_keys)
 {
-    const uint16_t CHUNK_SIZE = std::numeric_limits<uint16_t>::max();
+    row_ids.reserve(num_keys);
+
     const uint32_t NUM_CHUNKS = (num_keys + CHUNK_SIZE - 1) / CHUNK_SIZE; // Round up division
     std::cout << "Using " << NUM_CHUNKS << " chunks of size " << CHUNK_SIZE << std::endl;
 

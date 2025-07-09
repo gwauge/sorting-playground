@@ -10,6 +10,7 @@
 #include <mutex>
 // #include <execution>
 #include <pdqsort.h>
+#include <cstring>
 
 #include "common.hpp"
 #include "rowid.hpp"
@@ -27,9 +28,36 @@ void std_sort_wrapper(std::vector<ByteKey> &keys)
 //     std::sort(std::execution::par, keys.begin(), keys.end());
 // }
 
-void pdqsort_wrapper(std::vector<ByteKey> &keys)
+std::string print_key(const ByteKey &key)
 {
-    pdqsort(keys.begin(), keys.end());
+    std::string result;
+    for (uint8_t byte : key)
+    {
+        result += static_cast<char>(byte);
+    }
+
+    return result;
+}
+
+void pdqsort_wrapper(std::vector<ByteKey> &keys, std::vector<RowID> &row_ids)
+{
+    const size_t KEY_SIZE = 16;
+    // pdqsort(keys.begin(), keys.end());
+    pdqsort(row_ids.begin(), row_ids.end(),
+            [&](const RowID &a, const RowID &b)
+            {
+                const auto &key_a = keys[CHUNK_SIZE * a.chunk_id + a.chunk_offset];
+                const auto &key_b = keys[CHUNK_SIZE * b.chunk_id + b.chunk_offset];
+
+                //   std::cout << "Comparing keys: \n";
+                //   std::cout << "\t A (" << a.chunk_id << ", " << a.chunk_offset << "): " << print_key(key_a) << "\n";
+                //   std::cout << "\t B (" << b.chunk_id << ", " << b.chunk_offset << "): " << print_key(key_b) << "\n";
+
+                return memcmp(key_a.data(), key_b.data(), KEY_SIZE) < 0;
+                // int compare = memcmp(key_a.data(), key_b.data(), KEY_SIZE);
+                // if (compare != 0)
+                //     return compare < 0;
+            });
 }
 
 void print_first_n(const std::vector<ByteKey> &keys, size_t n)
@@ -37,19 +65,20 @@ void print_first_n(const std::vector<ByteKey> &keys, size_t n)
     std::cout << "First " << n << " keys:\n";
     for (size_t i = 0; i < n && i < keys.size(); ++i)
     {
-        std::cout << "Key " << i + 1 << ": ";
-        for (uint8_t byte : keys[i])
-        {
-            std::cout << static_cast<char>(byte);
-        }
-        std::cout << std::endl;
+        std::cout << "Key " << i + 1 << ": " << print_key(keys[i]) << std::endl;
     }
 }
 
-void is_sorted(const std::vector<ByteKey> &keys)
+void is_sorted(const std::vector<ByteKey> &keys, const std::vector<RowID> &row_ids)
 {
-    bool sorted = std::is_sorted(keys.begin(), keys.end());
-    std::cout << "Keys are " << (sorted ? "" : "NOT ") << "sorted" << std::endl;
+    bool sorted = std::is_sorted(row_ids.begin(), row_ids.end(),
+                                 [&](const RowID &a, const RowID &b)
+                                 {
+                                     const auto &key_a = keys[CHUNK_SIZE * a.chunk_id + a.chunk_offset];
+                                     const auto &key_b = keys[CHUNK_SIZE * b.chunk_id + b.chunk_offset];
+                                     return memcmp(key_a.data(), key_b.data(), key_a.size()) < 0;
+                                 });
+    std::cout << "RowIDs are " << (sorted ? "" : "NOT ") << "sorted" << std::endl;
 }
 
 int main()
@@ -67,15 +96,21 @@ int main()
     generate_row_ids(row_ids, NUM_KEYS);
     std::cout << "Generated " << row_ids.size() << " RowIDs in " << timer.lap_formatted() << std::endl;
 
+    // for (const auto &row_id : row_ids)
+    // {
+    //     std::cout << "RowID: chunk_id=" << row_id.chunk_id << ", chunk_offset=" << row_id.chunk_offset << std::endl;
+    // }
+
     std::cout << "Generating " << NUM_KEYS << " keys of size " << KEY_SIZE << " bytes...\n";
     std::vector<ByteKey> keys;
     generate_keys(keys, NUM_KEYS, KEY_SIZE);
     std::cout << "Key generation: " << timer.lap_formatted() << std::endl;
 
     auto sorted_keys = keys; // Copy for sorting
-    // pdqsort_wrapper(sorted_keys);
-    parallel_radix_wrapper(sorted_keys);
+    pdqsort_wrapper(sorted_keys, row_ids);
+    // parallel_radix_wrapper(sorted_keys);
     std::cout << "Sorted " << sorted_keys.size() << " keys in " << timer.lap_formatted() << std::endl;
+    is_sorted(sorted_keys, row_ids);
 
     // Benchmark sorts
     // benchmark_sort(keys, radix_sort, N_RUNS, "Radix sort");
