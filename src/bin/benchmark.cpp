@@ -9,61 +9,8 @@
 #include <thread>
 #include <mutex>
 
-// Alias for clarity
-using ByteKey = std::vector<uint8_t>;
-
-// LSD Radix Sort for equal-length keys
-void radix_sort(std::vector<ByteKey> &keys)
-{
-    if (keys.empty())
-        return;
-
-    const size_t key_size = keys[0].size();
-    const size_t RADIX = 256; // byte = 0–255
-
-    // Check all keys are the same size
-    for (const auto &key : keys)
-    {
-        if (key.size() != key_size)
-        {
-            throw std::invalid_argument("All keys must have the same length.");
-        }
-    }
-
-    std::vector<ByteKey> temp(keys.size());
-
-    for (int byte_index = static_cast<int>(key_size) - 1; byte_index >= 0; --byte_index)
-    {
-        // Counting sort buckets
-        std::array<size_t, RADIX> count = {};
-        std::array<size_t, RADIX> prefix_sum = {};
-
-        // Count occurrences of each byte value at position byte_index
-        for (const auto &key : keys)
-        {
-            uint8_t b = key[byte_index];
-            count[b]++;
-        }
-
-        // Compute prefix sum to determine positions
-        size_t sum = 0;
-        for (size_t i = 0; i < RADIX; ++i)
-        {
-            prefix_sum[i] = sum;
-            sum += count[i];
-        }
-
-        // Place keys in temp array based on current byte
-        for (const auto &key : keys)
-        {
-            uint8_t b = key[byte_index];
-            temp[prefix_sum[b]++] = key;
-        }
-
-        // Copy back to original array
-        keys = temp;
-    }
-}
+#include "common.h"
+#include "algorithms/radix.hpp"
 
 void radix_sort_parallel_msb(std::vector<ByteKey> &keys, size_t sort_byte_index = 0)
 {
@@ -200,8 +147,9 @@ int main()
     // Print first 10 sorted keys using radix_sort for demonstration
     std::vector<ByteKey> sorted_keys = keys;
     auto start = std::chrono::high_resolution_clock::now();
-    radix_sort_parallel_msb(sorted_keys, 0); // Sort by the 1st byte (MSB)
+    // radix_sort_parallel_msb(sorted_keys, 0); // Sort by the 1st byte (MSB)
     // std::sort(sorted_keys.begin(), sorted_keys.end()); // Using std::sort for demonstration
+    radix_sort(sorted_keys); // Using the original radix sort for demonstration
     auto end = std::chrono::high_resolution_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "Radix sort (parallel) took: " << ms << " ms" << std::endl;
