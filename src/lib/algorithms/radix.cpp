@@ -1,13 +1,3 @@
-#include <chrono>
-#include <vector>
-#include <cstdint>
-#include <array>
-#include <iostream>
-#include <algorithm>
-#include <numeric>
-#include <thread>
-#include <mutex>
-
 #include "algorithms/radix.hpp"
 
 void radix_sort(std::vector<ByteKey> &keys)
@@ -85,24 +75,20 @@ void radix_sort_parallel_msb(std::vector<ByteKey> &keys, size_t sort_byte_index)
     }
 
     // Step 2: Sort each bucket in parallel
-    std::vector<std::thread> threads;
+    ThreadPool pool; // Uses hardware concurrency by default
+    std::vector<std::future<void>> futures;
 
     for (size_t b = 0; b < RADIX; ++b)
     {
         if (!buckets[b].empty())
         {
-            threads.emplace_back([&bucket = buckets[b]]
-                                 {
-                                     std::sort(bucket.begin(), bucket.end()); // lexicographical for ByteKey
-                                 });
+            futures.push_back(pool.enqueue([&bucket = buckets[b]]
+                                           { std::sort(bucket.begin(), bucket.end()); }));
         }
     }
 
-    for (auto &t : threads)
-    {
-        if (t.joinable())
-            t.join();
-    }
+    for (auto &fut : futures)
+        fut.get();
 
     // Step 3: Reassemble sorted buckets into final array
     keys.clear();
@@ -112,9 +98,4 @@ void radix_sort_parallel_msb(std::vector<ByteKey> &keys, size_t sort_byte_index)
                     std::make_move_iterator(buckets[b].begin()),
                     std::make_move_iterator(buckets[b].end()));
     }
-}
-
-void radix_sort_parallel_msb(std::vector<ByteKey> &keys)
-{
-    radix_sort_parallel_msb(keys, 0); // Sort by the 1st byte (MSB)
 }

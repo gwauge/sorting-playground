@@ -73,7 +73,8 @@ int main()
     std::cout << "Key generation: " << timer.lap_formatted() << std::endl;
 
     auto sorted_keys = keys; // Copy for sorting
-    pdqsort_wrapper(sorted_keys);
+    // pdqsort_wrapper(sorted_keys);
+    parallel_radix_wrapper(sorted_keys);
     std::cout << "Sorted " << sorted_keys.size() << " keys in " << timer.lap_formatted() << std::endl;
 
     // Benchmark sorts
